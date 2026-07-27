@@ -1,0 +1,86 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "road-distress-agent"
+version = "0.1.0"
+description = "LangGraph multi-agent system for road distress analysis and maintenance recommendations."
+readme = "README.md"
+requires-python = ">=3.10,<3.13"
+dependencies = [
+    "langgraph>=1.1,<2.0",
+    "langgraph-checkpoint-sqlite>=3.0,<4.0",
+    "langchain-core>=1.3,<2.0",
+    "langchain-deepseek>=1.0,<2.0",
+    "langchain-openai>=1.2,<2.0",
+    "pydantic>=2.12,<3.0",
+    "python-dotenv>=1.0,<2.0",
+    "typer>=0.20,<1.0",
+    "rich>=14,<15",
+    "requests>=2.32,<3.0",
+    "python-docx>=1.1,<2.0",
+    "openpyxl>=3.1,<4.0",
+]
+
+[project.optional-dependencies]
+mcp = [
+    # Live email/calendar MCP (dry-run delivery does not require this).
+    "langchain-mcp-adapters>=0.1,<1.0",
+]
+dev = [
+    "pytest>=8,<10",
+    "pytest-asyncio>=0.24,<2.0",
+    "ruff>=0.15,<1.0",
+    "mypy>=1.18,<2.0",
+]
+web = [
+    "fastapi>=0.115,<1.0",
+    "uvicorn>=0.30,<1.0",
+    "python-multipart>=0.0.9,<1.0",
+]
+ingestion = [
+    # PDF parsing is delegated to MinerU. Torch must be installed separately
+    # against the matching CUDA build (e.g. cu128 for Blackwell GPUs):
+    #   pip install --index-url https://download.pytorch.org/whl/cu128 torch torchvision
+    "mineru[core]>=3.1,<4",
+]
+pass1 = [
+    "anthropic>=0.40,<1.0",
+    "beautifulsoup4>=4.12,<5.0",
+]
+qdrant = [
+    "qdrant-client>=1.12,<2.0",
+    "FlagEmbedding>=1.3,<2.0",
+]
+[project.scripts]
+road-distress-agent = "road_distress_agent.cli:app"
+road-distress-web = "road_distress_agent.api.server:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+road_distress_agent = ["prompts/*.txt"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
+pythonpath = ["src", "."]
+markers = [
+    "integration: real LLM/API calls, requires env vars (DEEPSEEK_API_KEY etc.)",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["B008"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+warn_unused_configs = true
+files = ["src", "tests"]

@@ -1,0 +1,67 @@
+:root {
+  --rd-accent: #5b6cff;
+  --rd-accent-2: #7a5cff;
+  --rd-accent-soft: #eef2ff;
+  --rd-bg: #fbfbfd;
+  --rd-surface: #ffffff;
+  --rd-surface-soft: #f6f7fb;
+  --rd-border: #ecedf3;
+  --rd-border-strong: #dfe3ee;
+  --rd-text: #2b2f3a;
+  --rd-text-strong: #171a22;
+  --rd-text-dim: #7e88a0;
+  --rd-radius: 12px;
+  --rd-radius-control: 8px;
+  --rd-space: 8px;
+  --rd-shadow-soft: 0 10px 30px rgba(30, 30, 60, 0.06);
+  --rd-success: #2f9e6b;
+  --rd-warning: #b9831f;
+  --rd-danger: #c64545;
+  --rd-st-draft: #aeb6c6;
+  --rd-st-todo: #b9831f;
+  --rd-st-in: #2f9e6b;
+  --rd-st-deliv: #4f5bd5;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  min-height: 100vh;
+}
+
+body {
+  margin: 0;
+  background: var(--rd-bg);
+  color: var(--rd-text);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  letter-spacing: 0;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  letter-spacing: 0;
+}
+
+.view {
+  min-height: 100%;
+  padding: 24px;
+}
+
+.view h1 {
+  margin: 0;
+  color: var(--rd-text-strong);
+  font-size: 20px;
+  font-weight: 650;
+  line-height: 1.25;
+}

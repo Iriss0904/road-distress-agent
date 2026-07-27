@@ -1,0 +1,299 @@
+.debug-trace-panel {
+  position: fixed;
+  z-index: 30;
+  top: 48px;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  width: min(680px, 100vw);
+  grid-template-rows: auto auto minmax(0, 1fr);
+  border-left: 1px solid #d7dee8;
+  background: #fbfcfe;
+  box-shadow: -8px 0 28px rgba(20, 32, 51, 0.16);
+}
+.debug-trace-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #d7dee8;
+  background: #ffffff;
+}
+.debug-trace-head strong {
+  font-size: 14px;
+}
+
+.debug-trace-count,
+.debug-trace-meta,
+.debug-trace-duration,
+.debug-trace-error-chip {
+  display: inline-flex;
+  min-height: 22px;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.debug-trace-count,
+.debug-trace-meta {
+  background: #eef2f7;
+  color: #52616f;
+}
+
+.debug-trace-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.debug-trace-actions button {
+  padding: 4px 9px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #475569;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+}
+
+.debug-trace-actions button:hover {
+  border-color: #0891b2;
+  color: #155e75;
+}
+
+.debug-trace-empty {
+  padding: 18px 14px;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.debug-trace-body {
+  overflow: auto;
+  padding: 10px 12px 16px;
+}
+
+.debug-trace-turn,
+.debug-trace-layer,
+.debug-trace-node,
+.debug-trace-detail {
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.debug-trace-turn {
+  border: 1px solid #cbd5e1;
+}
+
+.debug-trace-layer {
+  margin: 10px 0;
+  border: 1px solid #dbe4ee;
+}
+
+.debug-trace-node {
+  margin: 8px 10px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.debug-trace-detail {
+  margin: 8px 0;
+  border: 1px solid #dbe4ee;
+}
+
+.debug-trace-turn summary,
+.debug-trace-layer summary,
+.debug-trace-node summary,
+.debug-trace-detail summary,
+.debug-trace-message summary {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.debug-trace-turn > summary,
+.debug-trace-layer > summary,
+.debug-trace-node > summary {
+  padding: 9px 10px;
+}
+
+.debug-trace-detail > summary,
+.debug-trace-message > summary {
+  padding: 8px 10px;
+}
+
+.debug-trace-turn summary::-webkit-details-marker,
+.debug-trace-layer summary::-webkit-details-marker,
+.debug-trace-node summary::-webkit-details-marker,
+.debug-trace-detail summary::-webkit-details-marker,
+.debug-trace-message summary::-webkit-details-marker {
+  display: none;
+}
+
+.debug-trace-turn-title,
+.debug-trace-layer-title,
+.debug-trace-node-label,
+.debug-trace-detail-title {
+  min-width: 0;
+  overflow: hidden;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.debug-trace-node-name {
+  color: #475569;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.debug-trace-kinds {
+  display: inline-flex;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.debug-trace-kind,
+.debug-trace-role {
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.debug-trace-kind.kind-llm_call {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.debug-trace-kind.kind-retrieval,
+.debug-trace-kind.kind-rerank {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.debug-trace-kind.kind-error {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.debug-trace-kind:not(.kind-llm_call):not(.kind-retrieval):not(.kind-rerank):not(.kind-error) {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.debug-trace-duration.ok {
+  background: #eef2f7;
+  color: #475569;
+}
+
+.debug-trace-duration.warn {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.debug-trace-duration.slow,
+.debug-trace-error-chip {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.debug-trace-layers,
+.debug-trace-details,
+.debug-trace-section-list {
+  padding: 0 10px 10px;
+}
+
+.debug-trace-section {
+  margin-top: 10px;
+}
+
+.debug-trace-section h4 {
+  margin: 0 0 6px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.debug-trace-section pre,
+.debug-trace-message pre {
+  max-height: 360px;
+  overflow: auto;
+  margin: 0;
+  padding: 10px;
+  border-radius: 8px;
+  background: #0f172a;
+  color: #e2e8f0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.debug-trace-message {
+  margin: 8px 0;
+  border: 1px solid #dbe4ee;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.role-system {
+  background: #f8fafc;
+  color: #475569;
+}
+
+.role-user,
+.role-human {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.role-assistant,
+.role-ai,
+.role-tool {
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+.debug-trace-message-size,
+.debug-trace-time,
+.debug-trace-muted {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.debug-trace-time {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.debug-trace-errors:empty {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .debug-trace-panel {
+    top: 48px;
+    width: 100vw;
+  }
+
+  .debug-trace-node > summary,
+  .debug-trace-detail > summary {
+    flex-wrap: wrap;
+  }
+
+  .debug-trace-kinds,
+  .debug-trace-time {
+    margin-left: 0;
+  }
+}
