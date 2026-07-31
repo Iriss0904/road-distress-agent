@@ -2,7 +2,7 @@
 
 **For inspectors who bring a field observation, maintenance engineers who need evidence, and project leads who need a reviewable maintenance package—not another chat transcript.**
 
-Start with a question from an imported guide or a road-distress observation. The workspace routes the task, carries the diagnostic state through clarifications and confirmations, grounds the result in retrieved evidence, and promotes reviewed findings into project delivery artifacts.
+Start with a question from an imported guide or a road-distress observation. The workspace routes the task, carries diagnostic state through clarifications and corrections, and grounds the result in retrieved evidence. A diagnosis becomes a versioned treatment draft that inspectors complete, reviewers approve or return, and archivists package at project level.
 
 [Explore the workflow](#how-it-works) · [Read the design notes](#design-notes) · [Run locally](#quick-start)
 
@@ -21,7 +21,7 @@ One diagnosis thread is scoped to one distress case. An inspection project aggre
 | A generic chat flow | This workspace |
 | --- | --- |
 | One prompt path for every request | Routes knowledge questions and distress cases into different workflows |
-| Answer is the endpoint | A confirmed diagnosis can be promoted into a project delivery flow |
+| Chat answer becomes the record | Agent output becomes a treatment draft; role capabilities govern completion, review, and archive |
 | Retrieval is an implementation detail | Evidence, citations, and answerability are part of the result contract |
 | Conversation state is incidental | Checkpoints, interrupts, corrections, and resumptions are first-class state |
 ## What it does
@@ -35,9 +35,9 @@ Say: “There is a shallow elongated depression after repeated traffic.” The d
 ### Resume after an interruption or correction
 
 Reply: “The measured crack width is eight millimetres, not six.” Checkpoints retain the thread, and reconciliation revisits the stage affected by that correction instead of treating the reply as a new case.
-### Turn reviewed findings into delivery work
+### Turn a diagnosis into reviewed project work
 
-Ask: “Add this confirmed finding to the inspection project and prepare the package.” The project ledger collects promoted records; the delivery graph produces a report, maintenance plan, and optional cost workbook. Email and calendar integrations produce local draft artifacts rather than sending messages or creating events.
+The graph supplies the disease, method, evidence-backed steps, and acceptance criteria; it does not pretend to know every auditable field fact. Inspectors complete measurements and location, reviewers can edit, return, or approve the versioned draft, and archivists aggregate approved records for delivery. Field provenance prevents a later AI refresh from silently replacing human edits.
 
 ![Project workflow: ledger review, archiving, and generated delivery document](docs/assets/project-delivery.gif)
 
@@ -55,7 +55,8 @@ flowchart LR
     H --> D
     D --> E
     E --> A[Grounded response]
-    D --> P[Project ledger]
+    D --> T[Versioned treatment draft]
+    T --> V[Inspector completion and review] --> P[Project ledger]
     P --> G[Delivery graph]
     G --> O[Reviewable artifacts]
 ```
@@ -170,9 +171,9 @@ The deterministic confirmation route accepts only an exact, non-question, non-co
 [deterministic_confirmation_route.py](src/road_distress_agent/nodes/deterministic_confirmation_route.py) · [top_router.py](src/road_distress_agent/nodes/top_router.py)
 #### When a diagnosis becomes project work
 
-A project lead needs a package built from several confirmed records, not a single free-form chat answer. Inlining report generation into diagnosis would blur the boundary between a case decision and a project-level handoff.
+A model can propose a disease name, treatment method, construction steps, and acceptance criteria; it cannot be the authoritative source for field measurements, location, task ownership, or review approval. Writing its answer directly into the ledger would erase that responsibility boundary, and a later agent refresh could overwrite a human correction.
 
-The delivery subgraph loads the ledger, asks for deduplication confirmation, runs cost processing, report and work-order specialists, compliance review, and packaging. The work-order node writes inspectable email and calendar drafts locally; it does not dispatch them externally.
+The workspace therefore projects diagnosis into a versioned treatment draft with per-field provenance. Inspectors complete their own drafts, reviewers edit or return them before approval, and archivists move approved records into project delivery. The separate delivery subgraph then loads the ledger, confirms scope, runs its specialists and compliance review, and packages local artifacts.
 
 [projects/models.py](src/road_distress_agent/projects/models.py) · [delivery/graph.py](src/road_distress_agent/delivery/graph.py) · [delivery/nodes/work_order.py](src/road_distress_agent/delivery/nodes/work_order.py)
 ## Execution traces
@@ -259,8 +260,7 @@ src/road_distress_agent/nodes/ Routing, diagnosis, evidence, safety, and HITL no
 src/road_distress_agent/retrieval/ Retrieval channels, fusion, reranking, and evidence selection
 src/road_distress_agent/ingestion/ Document parsing and chunk construction
 src/road_distress_agent/delivery/ Delivery graph and artifact writers; projects/ owns the ledger
-scripts/                     Import and indexing entry points
-data/                        Ignored local data locations and usage documentation
+scripts/ and data/           Import/index entry points and the ignored local-data contract
 ```
 
 ## Scope and limitations
@@ -269,7 +269,7 @@ data/                        Ignored local data locations and usage documentatio
 - The repository contains no road standards, field records, vector indexes, or cost-norm data; import only material you are authorized to use.
 - Live text and image paths require configured external model services. PDF ingestion also depends on its optional parser runtime.
 - Delivery produces local artifacts; email and calendar outputs remain drafts until a deployment adds an authorized outbound integration.
-- The default configuration is oriented to local use. Network deployment requires its own authentication, authorization, transport security, backup, and secrets-management decisions.
+- Role capabilities model workflow responsibility, not login security; network deployments still need authentication, server-side authorization, transport security, backup, and secrets management.
 
 ## Roadmap, license, and security
 
