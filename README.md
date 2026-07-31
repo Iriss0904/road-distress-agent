@@ -29,6 +29,11 @@ One diagnosis thread is scoped to one distress case. An inspection project aggre
 ### Answer against an imported knowledge base
 
 Ask: “What checks does my imported maintenance guide require before reopening a repaired lane?” The knowledge path plans retrieval when needed, selects supported evidence, and returns a cited answer or an evidence-boundary outcome.
+
+![Multi-hop knowledge Q&A: comparison, workflow synthesis, and source inspection](docs/assets/knowledge-multihop.gif)
+
+*Two knowledge-only turns: a cited comparison of crack-sealing methods, followed by an evidence-composed workflow from severe alligator-cracking assessment to acceptance and source inspection.*
+
 ### Diagnose an observation as a staged conversation
 
 Say: “There is a shallow elongated depression after repeated traffic.” The diagnosis path collects discriminating facts, retrieves disease and treatment evidence, and asks for clarification or candidate confirmation before producing a structured recommendation.
@@ -68,9 +73,8 @@ Knowledge Q&A and distress diagnosis are not two labels for the same prompt. A k
 
 ```mermaid
 flowchart TD
-    START((Start)) --> PCL[parallel_context_loader]
-    PCL --> TR[top_router]
-    TR --> VS[vision_subgraph]
+    START((Start)) --> PCL[parallel_context_loader] --> TR[top_router]
+    TR --> VS[vision_subgraph] --> DR[diagnosis_reconcile]
     TR --> DR[diagnosis_reconcile]
     TR --> KQP[kb_query_planner]
     TR --> KQR[kb_query_rewriter]
@@ -78,7 +82,6 @@ flowchart TD
     TR --> KDM[kb_direct_meta_answer]
     TR --> WLH[weather_location_handler]
     TR --> OTR[off_topic_refuser]
-    VS --> DR
     DR --> DSH[disease_selection_handler]
     DR --> MSH[method_selection_handler]
     DR --> DRT[detail_retriever_v2]
@@ -86,16 +89,13 @@ flowchart TD
     DSH --> DQR[disease_query_rewriter]
     DSH --> DCD[disease_continue_discriminator]
     DSH --> MSH
-    DQR --> DRE[disease_retriever]
-    DRE --> DD[disease_discriminator]
-    DD --> DRR[disease_result_router]
+    DQR --> DRE[disease_retriever] --> DD[disease_discriminator] --> DRR[disease_result_router]
     DCD --> DRR
     DRR --> MSH
     DRR --> IR[intent_router]
     MSH --> MQR[method_query_rewriter]
     MSH --> DRT
-    MQR --> MRE[method_retriever]
-    MRE --> MD[method_discriminator]
+    MQR --> MRE[method_retriever] --> MD[method_discriminator]
     MD --> MRR[method_result_router]
     MRR --> DRT
     MRR --> IR
