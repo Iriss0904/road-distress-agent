@@ -1,116 +1,280 @@
 # Road Distress Agent
 
-面向道路病害诊断与维修建议的本地工作台。它将 LangGraph 诊断流程、混合检索、重排序、证据门控、可追溯引用和人工确认串联为一个可自行部署的应用。
+**For inspectors who bring a field observation, maintenance engineers who need evidence, and project leads who need a reviewable maintenance package—not another chat transcript.**
 
-本仓库不提供任何道路规范、PDF、文本、索引、向量数据、案例、评测数据或运行记录。使用者必须自行导入拥有合法使用权的资料。
+Start with a question from an imported guide or a road-distress observation. The workspace routes the task, carries the diagnostic state through clarifications and confirmations, grounds the result in retrieved evidence, and promotes reviewed findings into project delivery artifacts.
 
-## 架构概览
+[Explore the workflow](#how-it-works) · [Read the design notes](#design-notes) · [Run locally](#quick-start)
 
-```text
-用户描述/图片 → 诊断状态机 → 混合检索（稠密 + 稀疏） → rerank
-                                  ↓
-                         evidence gating / 引用锚点
-                                  ↓
-                  人工澄清或确认（HITL） → 维修建议与可追溯引用
+![Diagnosis workflow: knowledge aside, fact correction, and treatment draft](docs/assets/diagnosis-flow.gif)
+
+*Chinese-language walkthrough: begin a diagnosis, take a knowledge side path, correct the measured crack width, resume the pending stage, and review the grounded treatment draft.*
+
+## Why this exists
+
+An inspector may photograph a defect and record incomplete observations at the roadside. Back at the office, a maintenance engineer searches manuals, reconciles the observation, and decides what still needs to be measured. A project lead then combines several confirmed records into a report, maintenance plan, and cost worksheet.
+
+Without a shared workflow, that handoff becomes photos, browser tabs, copied notes, and spreadsheets. A general chatbot can answer a sentence, but it does not know whether the sentence is a request for a clause, a correction to a field fact, or a candidate selection that should change the next stage.
+
+One diagnosis thread is scoped to one distress case. An inspection project aggregates many promoted defect records, because that is how a road segment is inspected and handed off.
+
+| A generic chat flow | This workspace |
+| --- | --- |
+| One prompt path for every request | Routes knowledge questions and distress cases into different workflows |
+| Answer is the endpoint | A confirmed diagnosis can be promoted into a project delivery flow |
+| Retrieval is an implementation detail | Evidence, citations, and answerability are part of the result contract |
+| Conversation state is incidental | Checkpoints, interrupts, corrections, and resumptions are first-class state |
+## What it does
+
+### Answer against an imported knowledge base
+
+Ask: “What checks does my imported maintenance guide require before reopening a repaired lane?” The knowledge path plans retrieval when needed, selects supported evidence, and returns a cited answer or an evidence-boundary outcome.
+### Diagnose an observation as a staged conversation
+
+Say: “There is a shallow elongated depression after repeated traffic.” The diagnosis path collects discriminating facts, retrieves disease and treatment evidence, and asks for clarification or candidate confirmation before producing a structured recommendation.
+### Resume after an interruption or correction
+
+Reply: “The measured crack width is eight millimetres, not six.” Checkpoints retain the thread, and reconciliation revisits the stage affected by that correction instead of treating the reply as a new case.
+### Turn reviewed findings into delivery work
+
+Ask: “Add this confirmed finding to the inspection project and prepare the package.” The project ledger collects promoted records; the delivery graph produces a report, maintenance plan, and optional cost workbook. Email and calendar integrations produce local draft artifacts rather than sending messages or creating events.
+
+![Project workflow: ledger review, archiving, and generated delivery document](docs/assets/project-delivery.gif)
+
+*Project handoff walkthrough: create an inspection project, select confirmed findings, archive the delivery package, and open the generated document.*
+
+## How it works
+
+```mermaid
+flowchart LR
+    U[User turn] --> R[Top router]
+    R -->|Knowledge question| K[Knowledge retrieval]
+    R -->|Distress observation| D[Stateful diagnosis]
+    K --> E[Evidence boundary]
+    D --> H[Clarify or confirm]
+    H --> D
+    D --> E
+    E --> A[Grounded response]
+    D --> P[Project ledger]
+    P --> G[Delivery graph]
+    G --> O[Reviewable artifacts]
 ```
 
-后端保留节点级审计事件；LLM 与检索节点会写入运行时 trace。SQLite 只用于本地会话、项目和记忆数据，Qdrant 保存由你导入资料产生的向量索引。
+Knowledge Q&A and distress diagnosis are not two labels for the same prompt. A knowledge request is primarily a retrieval-and-composition problem. A diagnosis has staged state, fact corrections, candidate choices, and a different output contract. Both workflows share retrieval, citations, checkpointing, and runtime traces.
 
-## 前置条件
+<details>
+<summary>Full runtime graph from the public <code>graph.py</code></summary>
 
-- Python 3.10–3.12
-- Node.js 18+
-- Docker 与 Docker Compose（用于 Qdrant）
-- live 模式所选模型供应商的凭证
+```mermaid
+flowchart TD
+    START((Start)) --> PCL[parallel_context_loader]
+    PCL --> TR[top_router]
+    TR --> VS[vision_subgraph]
+    TR --> DR[diagnosis_reconcile]
+    TR --> KQP[kb_query_planner]
+    TR --> KQR[kb_query_rewriter]
+    TR --> KBR[kb_retriever]
+    TR --> KDM[kb_direct_meta_answer]
+    TR --> WLH[weather_location_handler]
+    TR --> OTR[off_topic_refuser]
+    VS --> DR
+    DR --> DSH[disease_selection_handler]
+    DR --> MSH[method_selection_handler]
+    DR --> DRT[detail_retriever_v2]
+    DR --> MW[memory_writer]
+    DSH --> DQR[disease_query_rewriter]
+    DSH --> DCD[disease_continue_discriminator]
+    DSH --> MSH
+    DQR --> DRE[disease_retriever]
+    DRE --> DD[disease_discriminator]
+    DD --> DRR[disease_result_router]
+    DCD --> DRR
+    DRR --> MSH
+    DRR --> IR[intent_router]
+    MSH --> MQR[method_query_rewriter]
+    MSH --> DRT
+    MQR --> MRE[method_retriever]
+    MRE --> MD[method_discriminator]
+    MD --> MRR[method_result_router]
+    MRR --> DRT
+    MRR --> IR
+    DRT --> AC[answer_composer]
+    KQP --> KBR
+    KQP --> KHR[kb_hop_retriever]
+    KQP --> KCC[kb_clarification_composer]
+    KQR --> KBR
+    KBR --> KAC[kb_answer_composer]
+    KHR --> KPAC[kb_planned_answer_composer]
+    KAC --> IR
+    KAC --> MW
+    KPAC --> IR
+    KPAC --> MW
+    KCC --> IR
+    KCC --> MW
+    KDM --> IR
+    KDM --> MW
+    IR --> DSH
+    IR --> MSH
+    IR --> WLH
+    IR --> HOI[handle_off_intent]
+    HOI --> IR
+    HOI --> MW
+    OTR --> IR
+    OTR --> MW
+    AC --> IR
+    AC --> SC[safety_critic]
+    WLH --> IR
+    WLH --> SNR[safety_norm_rewriter]
+    WLH --> SC
+    SNR --> SNT[safety_norm_retriever]
+    SNT --> AWL[address_weather_loader]
+    SNT --> CAA[construction_arrangement_advisor]
+    AWL --> CAA
+    CAA --> SC
+    SC --> AC
+    SC --> CTO[construction_tip_offer]
+    SC --> MW
+    CTO --> IR
+    MW --> END((End))
+```
+</details>
+## Design notes
 
-## 快速启动（空知识库）
+#### When a corrected fact invalidates a downstream conclusion
+
+A user first says “the crack is about six millimetres,” then corrects it to “measured at eight.” Appending that sentence to chat history asks a model to notice that an earlier disease candidate, treatment choice, or answer is stale; that is a state-invalidation failure waiting to happen.
+
+`diagnosis_reconcile` merges the new text, visual description, and known facts into structured fields. When a field changes, it finds the earliest affected stage and explicitly clears the derived state from that stage onward before routing again.
+
+[diagnosis_reconcile.py](src/road_distress_agent/nodes/diagnosis_reconcile.py) · [diagnosis_dependencies.py](src/road_distress_agent/nodes/diagnosis_dependencies.py)
+#### When a user asks a knowledge question in the middle of diagnosis
+
+While the system is waiting for a crack measurement, a user may ask: “How should I measure that width?” Treating this as the missing value contaminates diagnosis state; answering it as a new conversation loses the pending interrupt.
+
+The top router can take a knowledge side path and preserve the original interrupt for the next turn. Its invariants also repair impossible jumps, such as asking for procedure evidence before a treatment has been selected.
+
+[top_router.py](src/road_distress_agent/nodes/top_router.py) · [top_router_invariants.py](src/road_distress_agent/nodes/top_router_invariants.py)
+#### When retrieval returns text but cannot support an answer
+
+A question can be in scope for road maintenance while the imported corpus lacks evidence for it. A fail-open RAG path treats nonempty retrieval as permission to generate, even when the retrieved text is merely similar.
+
+The evidence gate is deterministic and returns `ANSWER`, `REFUSE`, or `ERROR`. Diagnosis requires procedure evidence; planned knowledge answers evaluate each evidence slot and expose only passing chunks. The gate contract also supports score and query-anchor checks, while the public runtime composer uses its R1 policy. A dependency failure represented in the assessment raises `ERROR`; retriever failures are deliberately not swallowed, so an infrastructure failure is not disguised as “the knowledge base has no material.”
+
+[evidence_gate.py](src/road_distress_agent/evidence_gate.py) · [evidence_gate_runtime.py](src/road_distress_agent/nodes/evidence_gate_runtime.py) · [kb_evidence_boundary.py](src/road_distress_agent/nodes/kb_evidence_boundary.py) · [diagnosis_gate_boundary.py](src/road_distress_agent/nodes/diagnosis_gate_boundary.py)
+#### When a decision is unambiguous enough for code
+
+After a candidate list, “choose pothole” is a confirmation, not an open-ended reasoning task. Sending every such turn through an LLM router adds an avoidable model call and creates another opportunity to reinterpret a clear user instruction.
+
+The deterministic confirmation route accepts only an exact, non-question, non-correction match in the active interrupt context. Ambiguous input falls back to the structured router. In this system’s evolution, removing an unnecessary LLM node is sometimes the right design change.
+
+[deterministic_confirmation_route.py](src/road_distress_agent/nodes/deterministic_confirmation_route.py) · [top_router.py](src/road_distress_agent/nodes/top_router.py)
+#### When a diagnosis becomes project work
+
+A project lead needs a package built from several confirmed records, not a single free-form chat answer. Inlining report generation into diagnosis would blur the boundary between a case decision and a project-level handoff.
+
+The delivery subgraph loads the ledger, asks for deduplication confirmation, runs cost processing, report and work-order specialists, compliance review, and packaging. The work-order node writes inspectable email and calendar drafts locally; it does not dispatch them externally.
+
+[projects/models.py](src/road_distress_agent/projects/models.py) · [delivery/graph.py](src/road_distress_agent/delivery/graph.py) · [delivery/nodes/work_order.py](src/road_distress_agent/delivery/nodes/work_order.py)
+## Execution traces
+
+Nodes append structured audit events to the shared state. LLM and retrieval calls use dedicated trace helpers, and the API streams extracted trace events over SSE so a thread can be inspected by route, evidence, gate decision, and composition step.
+
+The schema below is real; the values are synthetic.
+
+```json
+[
+  {"sequence": 1, "schema_version": 1, "timestamp": "synthetic", "node": "top_router", "kind": "llm_call", "title": "Top-level route decision",
+   "output": {"effective_route": {"action": "kb_aside", "rag_tier": "single_hop"}}},
+  {"sequence": 2, "schema_version": 1, "timestamp": "synthetic", "node": "kb_retriever", "kind": "retrieval", "title": "KB evidence search",
+   "retrieval": {"query": "synthetic query", "filters": {}, "chunk_count": 1, "chunks": [{"chunk_id": "synthetic-chunk"}]}},
+  {"sequence": 3, "schema_version": 1, "timestamp": "synthetic", "node": "kb_answer_composer", "kind": "evidence_gate", "title": "Evidence gate decision",
+   "output": {"decision": "ANSWER", "usable_chunk_ids": ["synthetic-chunk"], "passed_slots": [], "policy_tier": "R1"}},
+  {"sequence": 4, "schema_version": 1, "timestamp": "synthetic", "node": "kb_answer_composer", "kind": "llm_call", "title": "KB answer composer LLM",
+   "output": {"cited_chunk_ids": ["synthetic-chunk"]}}
+]
+```
+
+[tracing.py](src/road_distress_agent/tracing.py) · [state.py](src/road_distress_agent/state.py) · [turn_stream.py](src/road_distress_agent/api/turn_stream.py)
+
+## Quick start
+
+Development mode starts the workspace without calling live models. You can inspect the UI, routing shell, and project surfaces, but a knowledge answer requires your own imported corpus and live model configuration. The commands below cover the public release's static and build checks; validation that requires private corpus data stays outside this repository.
 
 ```bash
-git clone <your-public-repository-url>
+git clone <repository-url>
 cd road-distress-agent
+
 python -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -e ".[web,qdrant,dev]"
 cp .env.example .env
+
 docker compose up -d qdrant
-cd frontend
-npm ci
-npm run build
-cd ..
+cd frontend && npm ci && npm run build && cd ..
 road-distress-web
 ```
 
-打开 `http://127.0.0.1:8010`。默认 `.env` 使用 `ROAD_DISTRESS_RUN_MODE=dev`，因此空知识库也能启动工作台而不会发出模型调用。知识库为空时，不应将其产生的诊断文本视为规范依据；请先完成下方导入和索引步骤，再将模式改为 `live`。
-
-前端开发模式可另开终端运行：
+Open `http://127.0.0.1:8010`. For frontend development, run `npm run dev` from `frontend/` in a separate terminal; set `VITE_API_TARGET` if the backend address changes.
 
 ```bash
-cd frontend
-npm run dev
-```
-
-`VITE_API_TARGET` 可用于将开发代理指向其他后端地址。生产部署前请自行配置访问控制与 TLS。
-
-## 配置
-
-`.env.example` 只包含变量名与安全默认值。重点变量：
-
-- `DATA_DIR`：本地运行数据根目录，默认 `./data`。
-- `QDRANT_URL`、`QDRANT_API_KEY`、`QDRANT_COLLECTION`：检索服务和 collection。
-- `DEEPSEEK_*`：文本模型配置；live 模式需要 `DEEPSEEK_API_KEY`。
-- `DASHSCOPE_*`：可选图像模型配置；live 模式处理图片时需要其凭证。
-- `ROAD_DISTRESS_NORM_DB`：可选的、你自行维护的造价定额 SQLite 文件；仓库不提供此数据。
-
-不要提交 `.env`、原始资料、解析结果、数据库或 Qdrant volume。详见 [data/README.md](data/README.md) 与 [SECURITY.md](SECURITY.md)。
-
-## 导入自有资料并构建索引
-
-支持 Markdown、纯文本和 PDF。Markdown/文本的最小链路不依赖 LLM：
-
-```bash
-# 将自己有权使用的 .md 或 .txt 放入 data/raw/ 后执行
-python scripts/import_documents.py data/raw --out data/processed
-
-# 对每个输出文档构建 BGE-M3 稠密 + 稀疏向量索引
-python scripts/build_qdrant_index.py data/processed/<document-id>
-```
-
-PDF 走 MinerU 解析与可选的上下文增强链路：
-
-```bash
-python -m pip install -e ".[ingestion,pass1,qdrant]"
-python scripts/ingest_pdf_full.py --pdf data/raw/<your-file>.pdf --out data/processed
-```
-
-该 PDF 链路需要按 MinerU 文档安装适配本机硬件的 PyTorch；若启用了上下文增强，还需配置对应的模型服务。所有 chunks、JSONL、缓存和向量数据都只留在被 Git 忽略的本地数据目录。
-
-资料导入完成后，在 `.env` 设置实际模型变量并切换：
-
-```env
-ROAD_DISTRESS_RUN_MODE=live
-DEEPSEEK_API_KEY=your_key_here
-```
-
-重启 `road-distress-web`。若缺少 live 模式的必要变量，CLI 会明确报告缺失项；不要以空或未授权资料生成生产建议。
-
-## 验证命令
-
-```bash
+curl --fail http://127.0.0.1:8010/api/profile
 python -m pytest
 ruff check .
 cd frontend && npm run test && npm run build
-cd .. && docker compose config
-curl --fail http://127.0.0.1:8010/api/profile
 ```
 
-首次构建索引会下载 BGE-M3 模型，取决于网络与硬件。若 Qdrant 未启动或 collection 不存在，检索请求会公开报错原因；请启动服务并完成索引，而不要将错误结果当作无证据结论。
+## Bring your own knowledge base
 
-## 当前限制
+Place authorized Markdown or text documents in `data/raw/`, then import and index them:
 
-- 知识质量、版权与适用性由部署者负责；系统不提供法规或工程合规保证。
-- PDF 表格、扫描质量和复杂版式的解析质量取决于 MinerU 与输入材料。
-- 造价建议要求部署者提供具有合法授权且模式兼容的定额数据库。
-- 默认部署仅面向单机开发，未内置多租户权限控制或生产级密钥管理。
+```bash
+python scripts/import_documents.py data/raw --out data/processed
+python scripts/build_qdrant_index.py data/processed/<document-id>
+```
 
-发布前请阅读 [PUBLIC_RELEASE_AUDIT.md](PUBLIC_RELEASE_AUDIT.md) 和 [LICENSE_PENDING.md](LICENSE_PENDING.md)。
+The importer writes `rag_chunks.jsonl` under `data/processed/`; local inputs and outputs are ignored by Git. The index builder creates or upserts the collection named by `QDRANT_COLLECTION`.
+
+For PDF ingestion, install the optional dependencies and run:
+
+```bash
+python -m pip install -e ".[ingestion,pass1,qdrant]"
+python scripts/ingest_pdf_full.py --pdf data/raw/<your-document>.pdf --out data/processed
+```
+
+Re-run import and indexing after changing documents. `--recreate` deletes the configured Qdrant collection before indexing, so confirm the target service and collection first.
+
+```bash
+python scripts/build_qdrant_index.py data/processed/<document-id> --recreate
+```
+
+[data/README.md](data/README.md) describes the local-data contract.
+
+## Project structure
+
+```text
+frontend/                    Vue workbench for diagnosis, knowledge, tasks, and delivery
+src/road_distress_agent/api/ FastAPI routes, SSE streaming, and persistence adapters
+src/road_distress_agent/nodes/ Routing, diagnosis, evidence, safety, and HITL nodes
+src/road_distress_agent/retrieval/ Retrieval channels, fusion, reranking, and evidence selection
+src/road_distress_agent/ingestion/ Document parsing and chunk construction
+src/road_distress_agent/delivery/ Delivery graph and artifact writers; projects/ owns the ledger
+scripts/                     Import and indexing entry points
+data/                        Ignored local data locations and usage documentation
+```
+
+## Scope and limitations
+
+- Outputs are decision-support artifacts and require qualified engineering review.
+- The repository contains no road standards, field records, vector indexes, or cost-norm data; import only material you are authorized to use.
+- Live text and image paths require configured external model services. PDF ingestion also depends on its optional parser runtime.
+- Delivery produces local artifacts; email and calendar outputs remain drafts until a deployment adds an authorized outbound integration.
+- The default configuration is oriented to local use. Network deployment requires its own authentication, authorization, transport security, backup, and secrets-management decisions.
+
+## Roadmap, license, and security
+
+- Expand review surfaces for multimodal field evidence.
+- Add corpus versioning and collection-management workflows.
+- Add delivery integrations without bypassing project-level review.
+
+The project has no confirmed open-source license yet; see [LICENSE_PENDING.md](LICENSE_PENDING.md). Read [SECURITY.md](SECURITY.md) for deployment and reporting guidance, and [PUBLIC_RELEASE_AUDIT.md](PUBLIC_RELEASE_AUDIT.md) before publishing a derivative deployment.
