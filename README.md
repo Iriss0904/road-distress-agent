@@ -202,7 +202,7 @@ The schema below is real; the values are synthetic.
 Development mode starts the workspace without calling live models. You can inspect the UI, routing shell, and project surfaces, but a knowledge answer requires your own imported corpus and live model configuration. The commands below cover the public release's static and build checks; validation that requires private corpus data stays outside this repository.
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/Iriss0904/road-distress-agent.git
 cd road-distress-agent
 
 python -m venv .venv
