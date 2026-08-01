@@ -2,7 +2,7 @@
 
 **For inspectors who bring a field observation, maintenance engineers who need evidence, and project leads who need a reviewable maintenance package—not another chat transcript.**
 
-![Diagnosis workflow: knowledge aside, fact correction, and treatment draft](docs/assets/diagnosis-flow.gif)
+![Diagnosis workflow: knowledge aside, fact correction, and treatment draft](docs/assets/diagnosis-workflow.gif)
 
 Start with a question from an imported guide or a road-distress observation. The workspace routes the task, carries diagnostic state through clarifications and corrections, and grounds the result in retrieved evidence. A diagnosis becomes a versioned treatment draft that inspectors complete, reviewers approve or return, and archivists package at project level.
 
@@ -30,7 +30,7 @@ One diagnosis thread is scoped to one distress case. An inspection project aggre
 
 Ask: “What checks does my imported maintenance guide require before reopening a repaired lane?” The knowledge path plans retrieval when needed, selects supported evidence, and returns a cited answer or an evidence-boundary outcome.
 
-![Multi-hop knowledge Q&A: comparison, workflow synthesis, and source inspection](docs/assets/knowledge-multihop.gif)
+![Multi-hop knowledge Q&A: comparison, workflow synthesis, and source inspection](docs/assets/knowledge-qa.gif)
 
 *Two knowledge-only turns: a cited comparison of crack-sealing methods, followed by an evidence-composed workflow from severe alligator-cracking assessment to acceptance and source inspection.*
 
@@ -44,7 +44,7 @@ Reply: “The measured crack width is eight millimetres, not six.” Checkpoints
 
 The graph supplies the disease, method, evidence-backed steps, and acceptance criteria; it does not pretend to know every auditable field fact. Inspectors complete measurements and location, reviewers can edit, return, or approve the versioned draft, and archivists aggregate approved records for delivery. Field provenance prevents a later AI refresh from silently replacing human edits.
 
-![Project workflow: ledger review, archiving, and generated delivery document](docs/assets/project-delivery.gif)
+![Project workflow: ledger review, archiving, and generated delivery document](docs/assets/project-delivery-workflow.gif)
 
 *Project handoff walkthrough: create an inspection project, select confirmed findings, archive the delivery package, and open the generated document.*
 
