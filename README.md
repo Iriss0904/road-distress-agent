@@ -2,11 +2,11 @@
 
 **For inspectors who bring a field observation, maintenance engineers who need evidence, and project leads who need a reviewable maintenance package—not another chat transcript.**
 
+![Diagnosis workflow: knowledge aside, fact correction, and treatment draft](docs/assets/diagnosis-flow.gif)
+
 Start with a question from an imported guide or a road-distress observation. The workspace routes the task, carries diagnostic state through clarifications and corrections, and grounds the result in retrieved evidence. A diagnosis becomes a versioned treatment draft that inspectors complete, reviewers approve or return, and archivists package at project level.
 
 [Explore the workflow](#how-it-works) · [Read the design notes](#design-notes) · [Run locally](#quick-start)
-
-![Diagnosis workflow: knowledge aside, fact correction, and treatment draft](docs/assets/diagnosis-flow.gif)
 
 *Chinese-language walkthrough: begin a diagnosis, take a knowledge side path, correct the measured crack width, resume the pending stage, and review the grounded treatment draft.*
 
@@ -277,4 +277,4 @@ scripts/ and data/           Import/index entry points and the ignored local-dat
 - Add corpus versioning and collection-management workflows.
 - Add delivery integrations without bypassing project-level review.
 
-The project has no confirmed open-source license yet; see [LICENSE_PENDING.md](LICENSE_PENDING.md). Read [SECURITY.md](SECURITY.md) for deployment and reporting guidance, and [PUBLIC_RELEASE_AUDIT.md](PUBLIC_RELEASE_AUDIT.md) before publishing a derivative deployment.
+The project has no confirmed open-source license yet; see [the license notice](docs/release/LICENSE_PENDING.md). Read [SECURITY.md](SECURITY.md) for deployment and reporting guidance, and [the public-release audit](docs/release/PUBLIC_RELEASE_AUDIT.md) before publishing a derivative deployment.
